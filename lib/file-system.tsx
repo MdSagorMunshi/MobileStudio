@@ -1,62 +1,73 @@
+import { openDB, type IDBPDatabase } from "idb"
+
 export interface FileNode {
   id: string
   name: string
   type: "file" | "folder"
-  parentId: string | null
   content?: string
+  children?: string[]
+  parentId: string | null
   createdAt: number
+  updatedAt: number
 }
 
 class FileSystem {
-  private dbName = "mobilestudio_files"
-  private db: IDBDatabase | null = null
+  private db: IDBPDatabase | null = null
+  private currentProjectId = "default"
 
   setProjectDatabase(projectId: string) {
-    this.dbName = `mobilestudio_project_data_${projectId}`
+    this.currentProjectId = projectId
     this.db = null
   }
 
-  private async getDB(): Promise<IDBDatabase> {
-    if (this.db) return this.db
-
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1)
-
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => {
-        this.db = request.result
-        resolve(request.result)
-      }
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result
+  async init() {
+    console.log("[v0] Initializing file system for project:", this.currentProjectId)
+    this.db = await openDB(`mobilestudio-fs-${this.currentProjectId}`, 1, {
+      upgrade(db) {
         if (!db.objectStoreNames.contains("files")) {
           db.createObjectStore("files", { keyPath: "id" })
         }
-      }
-    })
-  }
-
-  async init(): Promise<void> {
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readonly")
-    const store = tx.objectStore("files")
-    const count = await new Promise<number>((resolve) => {
-      const countRequest = store.count()
-      countRequest.onsuccess = () => resolve(countRequest.result)
+      },
     })
 
-    if (count === 0) {
-      await this.createDefaultFiles()
+    const files = await this.getAllFiles()
+    if (files.length === 0) {
+      await this.initializeDefaultProject()
     }
   }
 
-  private async createDefaultFiles() {
-    const root = await this.createFolder("my-project", null)
-    await this.createFile(
-      "index.html",
-      root.id,
-      `<!DOCTYPE html>
+  async initializeDefaultProject() {
+    const rootId = "root"
+    const srcId = "src-folder"
+    const indexId = "index-html"
+    const styleId = "style-css"
+    const scriptId = "script-js"
+
+    const root: FileNode = {
+      id: rootId,
+      name: "project",
+      type: "folder",
+      children: [srcId],
+      parentId: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    const srcFolder: FileNode = {
+      id: srcId,
+      name: "src",
+      type: "folder",
+      children: [indexId, styleId, scriptId],
+      parentId: rootId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    const indexFile: FileNode = {
+      id: indexId,
+      name: "index.html",
+      type: "file",
+      content: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -67,174 +78,134 @@ class FileSystem {
 <body>
   <div class="container">
     <h1>Welcome to MobileStudio</h1>
-    <p>Start editing your files!</p>
+    <p>Start editing your files to see the magic happen!</p>
   </div>
   <script src="script.js"></script>
 </body>
 </html>`,
-    )
-    await this.createFile(
-      "style.css",
-      root.id,
-      `* {
+      parentId: srcId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    const styleFile: FileNode = {
+      id: styleId,
+      name: "style.css",
+      type: "file",
+      content: `* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #0a0a0a;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
 }
 
 .container {
+  background: white;
+  padding: 3rem;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   text-align: center;
-  padding: 2rem;
+  max-width: 600px;
 }
 
 h1 {
   font-size: 2.5rem;
+  color: #667eea;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}`,
-    )
-    await this.createFile(
-      "script.js",
-      root.id,
-      `console.log('Welcome to MobileStudio!')
+}
 
-// Add your JavaScript code here
-`,
-    )
+p {
+  font-size: 1.2rem;
+  color: #666;
+}`,
+      parentId: srcId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    const scriptFile: FileNode = {
+      id: scriptId,
+      name: "script.js",
+      type: "file",
+      content: `console.log('MobileStudio is ready!');
+
+// Your code here
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded');
+});`,
+      parentId: srcId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    await this.createFile(root)
+    await this.createFile(srcFolder)
+    await this.createFile(indexFile)
+    await this.createFile(styleFile)
+    await this.createFile(scriptFile)
+  }
+
+  async createFile(file: FileNode) {
+    if (!this.db) throw new Error("Database not initialized")
+    await this.db.put("files", file)
+  }
+
+  async getFile(id: string): Promise<FileNode | undefined> {
+    if (!this.db) throw new Error("Database not initialized")
+    return await this.db.get("files", id)
   }
 
   async getAllFiles(): Promise<FileNode[]> {
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readonly")
-    const store = tx.objectStore("files")
-
-    return new Promise((resolve, reject) => {
-      const request = store.getAll()
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
+    if (!this.db) throw new Error("Database not initialized")
+    return await this.db.getAll("files")
   }
 
-  async getFile(id: string): Promise<FileNode | null> {
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readonly")
-    const store = tx.objectStore("files")
-
-    return new Promise((resolve, reject) => {
-      const request = store.get(id)
-      request.onsuccess = () => resolve(request.result || null)
-      request.onerror = () => reject(request.error)
-    })
+  async updateFile(id: string, updates: Partial<FileNode>) {
+    if (!this.db) throw new Error("Database not initialized")
+    const file = await this.getFile(id)
+    if (!file) throw new Error("File not found")
+    const updated = { ...file, ...updates, updatedAt: Date.now() }
+    await this.db.put("files", updated)
   }
 
-  async createFile(name: string, parentId: string | null, content = ""): Promise<FileNode> {
-    const file: FileNode = {
-      id: Date.now().toString() + Math.random(),
-      name,
-      type: "file",
-      parentId,
-      content,
-      createdAt: Date.now(),
-    }
-
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readwrite")
-    const store = tx.objectStore("files")
-
-    return new Promise((resolve, reject) => {
-      const request = store.add(file)
-      request.onsuccess = () => resolve(file)
-      request.onerror = () => reject(request.error)
-    })
-  }
-
-  async createFolder(name: string, parentId: string | null): Promise<FileNode> {
-    const folder: FileNode = {
-      id: Date.now().toString() + Math.random(),
-      name,
-      type: "folder",
-      parentId,
-      createdAt: Date.now(),
-    }
-
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readwrite")
-    const store = tx.objectStore("files")
-
-    return new Promise((resolve, reject) => {
-      const request = store.add(folder)
-      request.onsuccess = () => resolve(folder)
-      request.onerror = () => reject(request.error)
-    })
-  }
-
-  async updateFile(id: string, updates: Partial<FileNode>): Promise<void> {
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readwrite")
-    const store = tx.objectStore("files")
-
+  async deleteFile(id: string) {
+    if (!this.db) throw new Error("Database not initialized")
     const file = await this.getFile(id)
     if (!file) return
 
-    const updated = { ...file, ...updates }
-
-    return new Promise((resolve, reject) => {
-      const request = store.put(updated)
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
-    })
-  }
-
-  async deleteFile(id: string): Promise<void> {
-    const db = await this.getDB()
-    const files = await this.getAllFiles()
-    const toDelete = [id]
-
-    const findChildren = (parentId: string) => {
-      files
-        .filter((f) => f.parentId === parentId)
-        .forEach((child) => {
-          toDelete.push(child.id)
-          if (child.type === "folder") {
-            findChildren(child.id)
-          }
-        })
+    if (file.type === "folder" && file.children) {
+      for (const childId of file.children) {
+        await this.deleteFile(childId)
+      }
     }
 
-    findChildren(id)
+    if (file.parentId) {
+      const parent = await this.getFile(file.parentId)
+      if (parent && parent.children) {
+        parent.children = parent.children.filter((id) => id !== file.id)
+        await this.updateFile(parent.id, { children: parent.children })
+      }
+    }
 
-    const tx = db.transaction(["files"], "readwrite")
-    const store = tx.objectStore("files")
-
-    return new Promise((resolve, reject) => {
-      toDelete.forEach((fileId) => store.delete(fileId))
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error)
-    })
+    await this.db.delete("files", id)
   }
 
-  async clearAll(): Promise<void> {
-    const db = await this.getDB()
-    const tx = db.transaction(["files"], "readwrite")
-    const store = tx.objectStore("files")
+  async getRootFiles(): Promise<FileNode[]> {
+    const allFiles = await this.getAllFiles()
+    const root = allFiles.find((f) => f.parentId === null)
+    if (!root || !root.children) return []
 
-    return new Promise((resolve, reject) => {
-      const request = store.clear()
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
-    })
+    const rootChildren = await Promise.all(root.children.map((id) => this.getFile(id)))
+    return rootChildren.filter((f): f is FileNode => f !== undefined)
   }
 }
 

@@ -2,74 +2,54 @@
 
 export interface Snippet {
   id: string
-  title: string
+  name: string
   description: string
-  language: string
   code: string
+  language: string
   category: string
 }
 
-const SNIPPETS_KEY = "mobilestudio_snippets"
-
-export const DEFAULT_SNIPPETS: Snippet[] = [
+const DEFAULT_SNIPPETS: Snippet[] = [
   {
     id: "react-component",
-    title: "React Component",
+    name: "React Component",
     description: "Basic React functional component",
     language: "typescript",
     category: "React",
-    code: `export default function ComponentName() {
+    code: `export default function Component() {
   return (
     <div>
-      <h1>Hello World</h1>
+      <h1>Component</h1>
     </div>
   )
 }`,
   },
   {
-    id: "react-useState",
-    title: "React useState Hook",
-    description: "Component with useState hook",
+    id: "react-usestate",
+    name: "useState Hook",
+    description: "React useState hook example",
     language: "typescript",
     category: "React",
-    code: `import { useState } from 'react'
-
-export default function Counter() {
-  const [count, setCount] = useState(0)
-  
-  return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount(count + 1)}>Increment</button>
-    </div>
-  )
-}`,
+    code: `const [state, setState] = useState(initialValue)`,
   },
   {
-    id: "react-useEffect",
-    title: "React useEffect Hook",
-    description: "Component with useEffect hook",
+    id: "react-useeffect",
+    name: "useEffect Hook",
+    description: "React useEffect hook example",
     language: "typescript",
     category: "React",
-    code: `import { useEffect, useState } from 'react'
-
-export default function DataFetcher() {
-  const [data, setData] = useState(null)
+    code: `useEffect(() => {
+  // Effect code here
   
-  useEffect(() => {
-    // Fetch data or setup subscription
-    return () => {
-      // Cleanup
-    }
-  }, [])
-  
-  return <div>{data}</div>
-}`,
+  return () => {
+    // Cleanup code here
+  }
+}, [dependencies])`,
   },
   {
-    id: "html-boilerplate",
-    title: "HTML5 Boilerplate",
-    description: "Basic HTML5 document structure",
+    id: "html-template",
+    name: "HTML Template",
+    description: "Basic HTML5 template",
     language: "html",
     category: "HTML",
     code: `<!DOCTYPE html>
@@ -86,8 +66,8 @@ export default function DataFetcher() {
   },
   {
     id: "css-flexbox",
-    title: "CSS Flexbox Container",
-    description: "Flex container with common properties",
+    name: "Flexbox Container",
+    description: "CSS Flexbox container",
     language: "css",
     category: "CSS",
     code: `.container {
@@ -95,13 +75,12 @@ export default function DataFetcher() {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
 }`,
   },
   {
     id: "css-grid",
-    title: "CSS Grid Layout",
-    description: "Grid container with responsive columns",
+    name: "Grid Container",
+    description: "CSS Grid container",
     language: "css",
     category: "CSS",
     code: `.grid {
@@ -111,9 +90,20 @@ export default function DataFetcher() {
 }`,
   },
   {
+    id: "js-fetch",
+    name: "Fetch API",
+    description: "Fetch API example",
+    language: "javascript",
+    category: "JavaScript",
+    code: `fetch('https://api.example.com/data')
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error('Error:', error))`,
+  },
+  {
     id: "js-async",
-    title: "Async Function",
-    description: "Async/await function template",
+    name: "Async Function",
+    description: "Async/await function",
     language: "javascript",
     category: "JavaScript",
     code: `async function fetchData() {
@@ -123,56 +113,29 @@ export default function DataFetcher() {
     return data
   } catch (error) {
     console.error('Error:', error)
-    throw error
   }
 }`,
   },
   {
-    id: "js-array-methods",
-    title: "Array Methods",
-    description: "Common array manipulation methods",
-    language: "javascript",
-    category: "JavaScript",
-    code: `const items = [1, 2, 3, 4, 5]
-
-// Map
-const doubled = items.map(x => x * 2)
-
-// Filter
-const evens = items.filter(x => x % 2 === 0)
-
-// Reduce
-const sum = items.reduce((acc, x) => acc + x, 0)
-
-// Find
-const found = items.find(x => x > 3)`,
-  },
-  {
     id: "ts-interface",
-    title: "TypeScript Interface",
-    description: "Define a TypeScript interface",
+    name: "TypeScript Interface",
+    description: "TypeScript interface definition",
     language: "typescript",
     category: "TypeScript",
     code: `interface User {
-  id: string
+  id: number
   name: string
   email: string
-  age?: number
-  roles: string[]
+  isActive: boolean
 }`,
   },
   {
     id: "ts-type",
-    title: "TypeScript Type Alias",
-    description: "Define a TypeScript type",
+    name: "TypeScript Type",
+    description: "TypeScript type alias",
     language: "typescript",
     category: "TypeScript",
-    code: `type Status = 'pending' | 'active' | 'completed'
-
-type Result<T> = {
-  data: T
-  error?: string
-}`,
+    code: `type Status = 'pending' | 'active' | 'completed'`,
   },
 ]
 
@@ -180,7 +143,7 @@ class SnippetsStore {
   private snippets: Snippet[] = []
 
   async init() {
-    const stored = localStorage.getItem(SNIPPETS_KEY)
+    const stored = localStorage.getItem("mobilestudio-snippets")
     if (stored) {
       this.snippets = JSON.parse(stored)
     } else {
@@ -189,15 +152,11 @@ class SnippetsStore {
     }
   }
 
-  private save() {
-    localStorage.setItem(SNIPPETS_KEY, JSON.stringify(this.snippets))
+  getSnippets(): Snippet[] {
+    return [...this.snippets]
   }
 
-  getAll(): Snippet[] {
-    return this.snippets
-  }
-
-  getByCategory(category: string): Snippet[] {
+  getSnippetsByCategory(category: string): Snippet[] {
     return this.snippets.filter((s) => s.category === category)
   }
 
@@ -206,18 +165,8 @@ class SnippetsStore {
     return Array.from(categories)
   }
 
-  search(query: string): Snippet[] {
-    const lowerQuery = query.toLowerCase()
-    return this.snippets.filter(
-      (s) =>
-        s.title.toLowerCase().includes(lowerQuery) ||
-        s.description.toLowerCase().includes(lowerQuery) ||
-        s.code.toLowerCase().includes(lowerQuery),
-    )
-  }
-
-  add(snippet: Omit<Snippet, "id">): Snippet {
-    const newSnippet = {
+  addSnippet(snippet: Omit<Snippet, "id">): Snippet {
+    const newSnippet: Snippet = {
       ...snippet,
       id: Date.now().toString(),
     }
@@ -226,7 +175,7 @@ class SnippetsStore {
     return newSnippet
   }
 
-  update(id: string, updates: Partial<Snippet>) {
+  updateSnippet(id: string, updates: Partial<Omit<Snippet, "id">>) {
     const index = this.snippets.findIndex((s) => s.id === id)
     if (index !== -1) {
       this.snippets[index] = { ...this.snippets[index], ...updates }
@@ -234,9 +183,13 @@ class SnippetsStore {
     }
   }
 
-  delete(id: string) {
+  deleteSnippet(id: string) {
     this.snippets = this.snippets.filter((s) => s.id !== id)
     this.save()
+  }
+
+  private save() {
+    localStorage.setItem("mobilestudio-snippets", JSON.stringify(this.snippets))
   }
 }
 
