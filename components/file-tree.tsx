@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { settingsStore } from "@/lib/settings-store"
 
 interface FileTreeProps {
   onFileSelect: (file: FileNode) => void
@@ -411,7 +412,13 @@ export function FileTree({ onFileSelect, selectedFileId }: FileTreeProps) {
                 }}
                 placeholder={dialogType === "file" ? "index.html" : "components"}
                 className="bg-black border-zinc-800 text-white"
-                autoFocus
+                autoComplete="off"
+                readOnly={settingsStore.getSettings().keyboardMode === "mscode"}
+                onClick={(e) => {
+                  if (settingsStore.getSettings().keyboardMode === "mscode") {
+                    e.currentTarget.blur()
+                  }
+                }}
               />
             </div>
           </div>
