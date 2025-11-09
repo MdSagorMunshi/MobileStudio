@@ -9,6 +9,7 @@ interface Settings {
   minimap: boolean
   lineNumbers: boolean
   autoSave: boolean
+  keyboardMode: "external" | "builtin"
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -20,6 +21,7 @@ const DEFAULT_SETTINGS: Settings = {
   minimap: false,
   lineNumbers: true,
   autoSave: true,
+  keyboardMode: "external",
 }
 
 class SettingsStore {

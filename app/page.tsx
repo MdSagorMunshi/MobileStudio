@@ -59,6 +59,7 @@ import { useToast } from "@/hooks/use-toast"
 import { settingsStore } from "@/lib/settings-store"
 import { keyboardShortcutManager } from "@/lib/keyboard-shortcuts"
 import { versionHistory } from "@/lib/version-history"
+import { VirtualKeyboard } from "@/components/virtual-keyboard"
 
 export default function MobileStudio() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -83,6 +84,7 @@ export default function MobileStudio() {
   const editorRef = useRef<CodeEditorRef>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false)
 
   useEffect(() => {
     const initializeProjects = async () => {
@@ -299,6 +301,11 @@ export default function MobileStudio() {
     }
   }, [selectedFile])
 
+  useEffect(() => {
+    const settings = settingsStore.getSettings()
+    setShowVirtualKeyboard(settings.keyboardMode === "builtin")
+  }, [])
+
   const loadFileContent = async (fileId: string) => {
     try {
       const file = await fileSystem.getFile(fileId)
@@ -471,6 +478,12 @@ export default function MobileStudio() {
     }
   }
 
+  const handleVirtualKeyPress = (key: string) => {
+    if (editorRef.current) {
+      editorRef.current.insertText(key)
+    }
+  }
+
   return (
     <div className="flex h-screen flex-col bg-black text-white overflow-hidden touch-manipulation">
       {/* Header */}
@@ -581,6 +594,25 @@ export default function MobileStudio() {
               </DropdownMenuSub>
 
               <DropdownMenuSeparator className="bg-zinc-800" />
+
+              <DropdownMenuItem
+                onClick={() => {
+                  const settings = settingsStore.getSettings()
+                  const newMode = settings.keyboardMode === "external" ? "builtin" : "external"
+                  settingsStore.updateSettings({ keyboardMode: newMode })
+                  setShowVirtualKeyboard(newMode === "builtin")
+                  toast({
+                    title: "Keyboard Mode",
+                    description: `Switched to ${newMode === "builtin" ? "MScode" : "External"} keyboard`,
+                  })
+                }}
+                className="cursor-pointer"
+              >
+                <Keyboard className="h-4 w-4 mr-2" />
+                {settingsStore.getSettings().keyboardMode === "external"
+                  ? "Use MScode Keyboard"
+                  : "Use External Keyboard"}
+              </DropdownMenuItem>
 
               <DropdownMenuItem onClick={() => setShowSnippets(true)} className="cursor-pointer">
                 <BookMarked className="h-4 w-4 mr-2" />
@@ -872,6 +904,9 @@ export default function MobileStudio() {
           onClose={() => setShowVersionHistory(false)}
           onRestore={handleRestoreVersion}
         />
+      )}
+      {showVirtualKeyboard && selectedFile && (
+        <VirtualKeyboard onKeyPress={handleVirtualKeyPress} onClose={() => setShowVirtualKeyboard(false)} />
       )}
     </div>
   )

@@ -22,6 +22,7 @@ export interface CodeEditorRef {
   getMatchCount: () => number
   getCurrentMatchIndex: () => number
   formatDocument: () => void
+  insertText: (text: string) => void
 }
 
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
@@ -99,6 +100,27 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
       formatDocument: () => {
         if (!editorRef.current) return
         editorRef.current.trigger("", "editor.action.formatDocument", null)
+      },
+      insertText: (text: string) => {
+        if (!editorRef.current) return
+
+        if (text === "BACKSPACE") {
+          const position = editorRef.current.getPosition()
+          if (position) {
+            const model = editorRef.current.getModel()
+            if (model) {
+              const range = {
+                startLineNumber: position.lineNumber,
+                startColumn: Math.max(1, position.column - 1),
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+              }
+              editorRef.current.executeEdits("", [{ range, text: "" }])
+            }
+          }
+        } else {
+          editorRef.current.trigger("keyboard", "type", { text })
+        }
       },
     }))
 

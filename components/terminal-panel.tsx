@@ -16,7 +16,7 @@ export function TerminalPanel() {
 
   useEffect(() => {
     // Add welcome message
-    addOutput("MobileStudio Terminal v2.0.0")
+    addOutput("MobileStudio Terminal v1.0.0")
     addOutput("Type 'help' for available commands")
     addOutput("")
   }, [])
@@ -214,7 +214,7 @@ export function TerminalPanel() {
 
   const handleClear = () => {
     setHistory([])
-    addOutput("MobileStudio Terminal v2.0.0")
+    addOutput("MobileStudio Terminal v1.0.0")
     addOutput("Type 'help' for available commands")
     addOutput("")
   }

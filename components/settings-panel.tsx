@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Palette, Code, Save } from "lucide-react"
+import { X, Palette, Code, Save, Keyboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -136,6 +136,33 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   checked={settings.minimap}
                   onCheckedChange={(checked) => handleSettingChange("minimap", checked)}
                 />
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Keyboard className="h-5 w-5 text-blue-500" />
+              <h3 className="text-base font-semibold">Input</h3>
+            </div>
+            <div className="space-y-4 pl-7">
+              <div className="space-y-2">
+                <Label htmlFor="keyboardMode">Keyboard Mode</Label>
+                <Select
+                  value={settings.keyboardMode}
+                  onValueChange={(value) => handleSettingChange("keyboardMode", value)}
+                >
+                  <SelectTrigger id="keyboardMode" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="external">External Keyboard</SelectItem>
+                    <SelectItem value="builtin">MScode Keyboard</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Choose between device keyboard or built-in MScode keyboard with programming symbols
+                </p>
               </div>
             </div>
           </section>
