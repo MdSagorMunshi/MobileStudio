@@ -18,6 +18,9 @@ import {
   FileText,
   Wand2,
   Keyboard,
+  BookMarked,
+  FolderKanban,
+  Clock,
 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -42,14 +45,20 @@ import { SearchPanel, type SearchOptions } from "@/components/search-panel"
 import { ShortcutsPanel } from "@/components/shortcuts-panel"
 import { TemplateSelector } from "@/components/template-selector"
 import { AboutDialog } from "@/components/about-dialog"
+import { SnippetsPanel } from "@/components/snippets-panel"
+import { ProjectSwitcher } from "@/components/project-switcher"
+import { FileSearchPanel } from "@/components/file-search-panel"
+import { VersionHistoryPanel } from "@/components/version-history-panel"
 import { fileSystem, type FileNode } from "@/lib/file-system"
 import { detectLanguage } from "@/lib/language-detector"
 import { formatCode } from "@/lib/code-formatter"
 import { downloadProject } from "@/lib/file-operations"
+import { projectManager } from "@/lib/project-manager"
 import { useTouchGestures } from "@/hooks/use-touch-gestures"
 import { useToast } from "@/hooks/use-toast"
 import { settingsStore } from "@/lib/settings-store"
 import { keyboardShortcutManager } from "@/lib/keyboard-shortcuts"
+import { versionHistory } from "@/lib/version-history"
 
 export default function MobileStudio() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,12 +73,40 @@ export default function MobileStudio() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [showSnippets, setShowSnippets] = useState(false)
+  const [showProjects, setShowProjects] = useState(false)
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
   const [searchMatchCount, setSearchMatchCount] = useState(0)
   const [searchCurrentMatch, setSearchCurrentMatch] = useState(0)
+  const [showFileSearch, setShowFileSearch] = useState(false)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
   const editorRef = useRef<CodeEditorRef>(null)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
+    const initializeProjects = async () => {
+      let projects = await projectManager.getAllProjects()
+
+      if (projects.length === 0) {
+        const defaultProject = await projectManager.createProject("Default Project", "Your first project")
+        projects = [defaultProject]
+      }
+
+      let currentId = await projectManager.getCurrentProjectId()
+
+      if (!currentId || !projects.find((p) => p.id === currentId)) {
+        currentId = projects[0].id
+        await projectManager.setCurrentProject(currentId)
+      }
+
+      setCurrentProjectId(currentId)
+      fileSystem.setProjectDatabase(currentId)
+      versionHistory.setProjectDatabase(currentId)
+      await fileSystem.init()
+    }
+
+    initializeProjects()
     settingsStore.init()
 
     keyboardShortcutManager.register("save", {
@@ -171,6 +208,37 @@ export default function MobileStudio() {
       },
     })
 
+    keyboardShortcutManager.register("snippets", {
+      key: "k",
+      ctrl: true,
+      shift: true,
+      description: "Open snippets library",
+      category: "General",
+      action: () => setShowSnippets(true),
+    })
+
+    keyboardShortcutManager.register("fileSearch", {
+      key: "f",
+      ctrl: true,
+      shift: true,
+      description: "Search in files",
+      category: "Search",
+      action: () => setShowFileSearch(true),
+    })
+
+    keyboardShortcutManager.register("versionHistory", {
+      key: "h",
+      ctrl: true,
+      shift: true,
+      description: "Version history",
+      category: "File",
+      action: () => {
+        if (selectedFile) {
+          setShowVersionHistory(true)
+        }
+      },
+    })
+
     const handleKeyDown = (e: KeyboardEvent) => {
       keyboardShortcutManager.handleKeyDown(e)
     }
@@ -178,6 +246,30 @@ export default function MobileStudio() {
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [sidebarOpen, selectedFile, openTabs])
+
+  useEffect(() => {
+    const settings = settingsStore.getSettings()
+    if (!settings.autoSave || !selectedFile) return
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        await versionHistory.saveVersion(selectedFile.id, fileContent)
+        console.log("[v0] Auto-saved version for", selectedFile.name)
+      } catch (error) {
+        console.error("[v0] Auto-save failed:", error)
+      }
+    }, 2000)
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [fileContent, selectedFile])
 
   useTouchGestures({
     onSwipeRight: () => {
@@ -331,9 +423,52 @@ export default function MobileStudio() {
     window.location.reload()
   }
 
+  const handleInsertSnippet = (code: string) => {
+    if (editorRef.current && selectedFile) {
+      const currentContent = fileContent
+      const updatedContent = currentContent + "\n\n" + code
+      handleContentChange(updatedContent)
+      setShowSnippets(false)
+    }
+  }
+
+  const handleProjectSwitch = async (projectId: string) => {
+    await projectManager.setCurrentProject(projectId)
+    setCurrentProjectId(projectId)
+    fileSystem.setProjectDatabase(projectId)
+    versionHistory.setProjectDatabase(projectId)
+
+    setOpenTabs([])
+    setSelectedFile(null)
+    setFileContent("")
+
+    window.location.reload()
+  }
+
+  const handleFileSelectFromSearch = (file: FileNode, lineNumber?: number) => {
+    setSelectedFile(file)
+  }
+
+  const handleRestoreVersion = async (content: string) => {
+    if (selectedFile) {
+      await versionHistory.saveVersion(selectedFile.id, fileContent, "Before restore")
+      setFileContent(content)
+      await fileSystem.updateFile(selectedFile.id, { content })
+    }
+  }
+
   const getFileExtension = (filename: string) => {
     const parts = filename.split(".")
     return parts.length > 1 ? parts[parts.length - 1] : ""
+  }
+
+  const handleInsertText = (text: string) => {
+    if (editorRef.current && selectedFile) {
+      // This would need to be implemented in the CodeEditor component
+      // For now, just append to content
+      const updatedContent = fileContent + text
+      handleContentChange(updatedContent)
+    }
   }
 
   return (
@@ -360,6 +495,18 @@ export default function MobileStudio() {
                 <DropdownMenuSubContent className="bg-zinc-900 border-zinc-800">
                   <DropdownMenuItem onClick={handleSave} disabled={!selectedFile} className="cursor-pointer">
                     Save File
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (selectedFile) {
+                        setShowVersionHistory(true)
+                      }
+                    }}
+                    disabled={!selectedFile}
+                    className="cursor-pointer"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Version History
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={async () => {
@@ -398,6 +545,10 @@ export default function MobileStudio() {
                   <DropdownMenuItem onClick={() => setShowSearch(true)} className="cursor-pointer">
                     Find
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowFileSearch(true)} className="cursor-pointer">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search in Files
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleFormat} disabled={!selectedFile} className="cursor-pointer">
                     <Wand2 className="h-4 w-4 mr-2" />
                     Format Document
@@ -431,10 +582,16 @@ export default function MobileStudio() {
 
               <DropdownMenuSeparator className="bg-zinc-800" />
 
+              <DropdownMenuItem onClick={() => setShowSnippets(true)} className="cursor-pointer">
+                <BookMarked className="h-4 w-4 mr-2" />
+                Code Snippets
+              </DropdownMenuItem>
+
               <DropdownMenuItem onClick={() => setShowSettings(true)} className="cursor-pointer">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
+
               <DropdownMenuItem onClick={() => setShowShortcuts(true)} className="cursor-pointer">
                 <Keyboard className="h-4 w-4 mr-2" />
                 Keyboard Shortcuts
@@ -445,6 +602,11 @@ export default function MobileStudio() {
               <DropdownMenuItem onClick={() => setShowAbout(true)} className="cursor-pointer">
                 <Info className="h-4 w-4 mr-2" />
                 About
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => setShowProjects(true)} className="cursor-pointer">
+                <FolderKanban className="h-4 w-4 mr-2" />
+                Projects
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -494,9 +656,27 @@ export default function MobileStudio() {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-transform"
+            onClick={() => setShowSnippets(true)}
+            title="Code Snippets"
+          >
+            <BookMarked className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-transform"
             onClick={() => setShowSettings(true)}
           >
             <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-transform"
+            onClick={() => setShowProjects(true)}
+            title="Project Manager"
+          >
+            <FolderKanban className="h-4 w-4" />
           </Button>
         </div>
       </header>
@@ -593,6 +773,10 @@ export default function MobileStudio() {
               />
             )}
 
+            {showFileSearch && (
+              <FileSearchPanel onClose={() => setShowFileSearch(false)} onFileSelect={handleFileSelectFromSearch} />
+            )}
+
             <div className="flex-1 overflow-hidden bg-black">
               {selectedFile && !showPreview ? (
                 <CodeEditor
@@ -620,7 +804,19 @@ export default function MobileStudio() {
             </div>
 
             {/* Mobile Toolbar */}
-            <MobileToolbar onSave={handleSave} />
+            <MobileToolbar
+              onSave={handleSave}
+              onUndo={() => {
+                // Implement undo if needed
+                toast({ title: "Undo", description: "Feature coming soon" })
+              }}
+              onRedo={() => {
+                // Implement redo if needed
+                toast({ title: "Redo", description: "Feature coming soon" })
+              }}
+              onSearch={() => setShowSearch(true)}
+              onInsertText={handleInsertText}
+            />
 
             {/* Bottom Bar */}
             <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-4 py-1.5">
@@ -661,6 +857,22 @@ export default function MobileStudio() {
         <TemplateSelector onClose={() => setShowTemplates(false)} onTemplateSelected={handleTemplateSelected} />
       )}
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {showSnippets && <SnippetsPanel onClose={() => setShowSnippets(false)} onInsert={handleInsertSnippet} />}
+      {showProjects && (
+        <ProjectSwitcher
+          onClose={() => setShowProjects(false)}
+          onProjectSwitch={handleProjectSwitch}
+          currentProjectId={currentProjectId}
+        />
+      )}
+      {showVersionHistory && selectedFile && (
+        <VersionHistoryPanel
+          fileId={selectedFile.id}
+          fileName={selectedFile.name}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={handleRestoreVersion}
+        />
+      )}
     </div>
   )
 }
