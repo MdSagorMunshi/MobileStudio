@@ -84,6 +84,17 @@ Full-featured mobile-first PWA code editor with comprehensive tooling.
 - Touch gesture support (swipe to toggle sidebar)
 - Touch-optimized buttons and controls
 
+**Virtual Keyboard System**
+- Full MScode keyboard with A-Z, 0-9, and symbols
+- QWERTY layout with programming symbols
+- Shift, Space, Tab, Enter, Backspace keys
+- Cursor navigation with arrow keys
+- Keyboard mode toggle (External vs MScode)
+- Settings integration for keyboard preferences
+- Touch-optimized key sizes
+- Visual active states on key press
+- Monaco Editor integration for character insertion
+
 **Themes & Customization**
 - Dark theme (pure black, OLED-optimized)
 - Light theme (clean white)
@@ -163,15 +174,15 @@ Full-featured mobile-first PWA code editor with comprehensive tooling.
 ### Recent Commits
 
 \`\`\`
+feat(keyboard): add fully functional virtual keyboard with QWERTY layout
+feat(keyboard): implement keyboard mode toggle (External vs MScode)
+feat(keyboard): integrate virtual keyboard with Monaco Editor
 feat(snippets): add code snippets library with custom templates
 feat(projects): implement multi-project management system
 feat(console): add integrated console for preview debugging
 feat(search): implement global file search with regex support
 feat(history): add version history with auto-save and restore
 feat(keyboard): create mobile keyboard toolbar with symbols
-fix(git): simplify git panel with download-only functionality
-feat(terminal): enhance terminal with additional commands (cd, mkdir, cp, mv, etc)
-feat(context-menu): add custom right-click menus for file management
 feat(sidebar): add toggle button for sidebar visibility
 docs(readme): create comprehensive documentation suite
 chore(license): add Creative Commons BY-NC 4.0 license

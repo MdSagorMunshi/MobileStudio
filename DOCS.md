@@ -14,6 +14,7 @@ Complete guide to installing, configuring, and using MobileStudio.
 6. [Configuration](#configuration)
 7. [Troubleshooting](#troubleshooting)
 8. [API Reference](#api-reference)
+9. [Virtual Keyboard](#virtual-keyboard)
 
 ---
 
@@ -434,6 +435,75 @@ await settingsStore.updateSettings({
   // ... other settings
 })
 \`\`\`
+
+---
+
+## 💻 Virtual Keyboard
+
+### MScode Keyboard (Built-in)
+
+Full-featured virtual keyboard for mobile devices, eliminating the need for external keyboards.
+
+#### Enabling Virtual Keyboard
+
+**Method 1: Menu**
+1. Click **Menu** button (top-left)
+2. Select **View > Keyboard Mode**
+3. Choose **MScode Keyboard**
+
+**Method 2: Settings**
+1. Open Settings panel
+2. Find **Keyboard Mode** option
+3. Switch to **MScode Keyboard**
+
+#### Keyboard Layout
+
+**QWERTY Layout:**
+- Full A-Z alphabet keys
+- Numbers 0-9
+- Common symbols: `.`, `,`, `!`, `?`
+
+**Programming Symbols:**
+- Brackets: `{ } [ ] ( ) < >`
+- Operators: `+ - * / = % &`
+- Quotes: `" ' \``
+- Special: `;`, `:`, `#`, `@`, `$`, `_`, `|`, `\`, `/`
+
+**Function Keys:**
+- **Shift** - Toggle uppercase/lowercase
+- **Space** - Insert space
+- **Tab** - Insert tab (2 or 4 spaces)
+- **Enter** - New line
+- **Backspace** - Delete character
+- **←→** - Move cursor left/right
+
+#### Features
+
+- **Touch Optimized** - Large, finger-friendly keys
+- **Visual Feedback** - Active states on key press
+- **Editor Integration** - Direct Monaco editor insertion
+- **No External Keyboard Required** - Complete coding capability
+- **Mobile-First Design** - Optimized for small screens
+
+#### Keyboard Modes
+
+**External Keyboard Mode:**
+- Uses your device's physical or on-screen keyboard
+- Keyboard toolbar shows symbol shortcuts only
+- Recommended for tablets with physical keyboards
+
+**MScode Keyboard Mode:**
+- Full virtual keyboard appears at bottom
+- Complete A-Z, 0-9, and symbol access
+- No need for device keyboard
+- Ideal for phones and touch-only devices
+
+#### Tips
+
+- Enable MScode keyboard on mobile for best experience
+- Use External keyboard mode with Bluetooth keyboards
+- Keyboard preferences save automatically
+- Switch modes anytime via menu or settings
 
 ---
 

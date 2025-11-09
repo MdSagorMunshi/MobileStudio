@@ -236,6 +236,66 @@ Pre-configured starter projects:
 
 ---
 
+## ⌨️ Virtual Keyboard
+
+### MScode Keyboard (Built-in)
+
+Complete virtual keyboard system for coding without external keyboards.
+
+#### Keyboard Layouts
+
+**QWERTY Layout:**
+- Full alphabet (A-Z)
+- Numbers (0-9)
+- Punctuation (`.`, `,`, `!`, `?`)
+
+**Symbol Layouts:**
+- Brackets: `{ } [ ] ( ) < >`
+- Math operators: `+ - * / = %`
+- Programming symbols: `& | ^ ~ # @ $ _`
+- Quotes and strings: `" ' \``
+- Path and logic: `\ / ; :`
+
+**Function Keys:**
+- Shift (uppercase toggle)
+- Space bar
+- Tab key (configurable size)
+- Enter (new line)
+- Backspace (delete)
+- Arrow keys (cursor navigation)
+
+#### Features
+
+- ✅ **Touch-Optimized** - Large keys for accurate typing
+- ✅ **Monaco Integration** - Direct editor insertion
+- ✅ **Multi-Layout** - Switch between letters and symbols
+- ✅ **Visual Feedback** - Active key highlighting
+- ✅ **Mobile-First** - Designed for small screens
+- ✅ **No External Keyboard Needed** - Complete independence
+
+#### Keyboard Modes
+
+**1. External Keyboard**
+- Uses device keyboard (physical or on-screen)
+- Shows toolbar with symbol shortcuts
+- Best for tablets with keyboards
+
+**2. MScode Keyboard**
+- Full virtual keyboard displayed
+- Complete coding capability
+- No external keyboard required
+- Ideal for phones and touch devices
+
+#### Configuration
+
+Access via:
+- Menu > View > Keyboard Mode
+- Settings > Keyboard Mode
+
+Modes persist across sessions.
+
+---
+
 ## 🎨 Themes
 
 ### Dark Theme (Default)

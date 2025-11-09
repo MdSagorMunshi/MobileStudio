@@ -30,6 +30,7 @@ Whether you're coding on a tablet, smartphone, or desktop, MobileStudio delivers
 - **Live Preview** with integrated console
 - **File Search** across entire project
 - **Version History** with auto-save
+- **Virtual Keyboard** with full QWERTY and symbol layouts
 - **Mobile Keyboard Toolbar** for faster coding
 - **Theme Switcher** (Dark, Light, Hacker)
 - **PWA Support** for offline editing
