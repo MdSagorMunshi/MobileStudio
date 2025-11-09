@@ -31,7 +31,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
 
           <div>
             <h3 className="text-zinc-400 mb-1">Version</h3>
-            <p className="text-white font-mono">1.0.0</p>
+            <p className="text-white font-mono">2.0.0</p>
           </div>
 
           <div>
